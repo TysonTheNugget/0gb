@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription Fetcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-4">Inscription Fetcher</h1>
+        
+        <!-- Input Section -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Bitcoin Addresses (one per line):</label>
+            <textarea id="addresses" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm h-24" placeholder="Enter addresses..."></textarea>
+        </div>
+        <div class="flex space-x-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">From Date (optional):</label>
+                <input type="date" id="from_date" class="mt-1 block border-gray-300 rounded-md shadow-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">To Date (optional):</label>
+                <input type="date" id="to_date" class="mt-1 block border-gray-300 rounded-md shadow-sm">
+            </div>
+        </div>
+        <div class="flex space-x-2 mb-4">
+            <button onclick="fetchInscriptions()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Fetch Inscriptions</button>
+            <button onclick="deleteSelected()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Delete Selected</button>
+            <button onclick="saveInscriptions()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Save Remaining</button>
+        </div>
+        
+        <!-- Image Section -->
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold">Inscription Images (Click to Select, Delete to Remove):</h2>
+            <div id="image_grid" class="grid grid-cols-5 gap-4 mt-2 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded-md"></div>
+        </div>
+        
+        <!-- Results Section -->
+        <div>
+            <h2 class="text-lg font-semibold">Results (JSON):</h2>
+            <pre id="results" class="bg-gray-50 p-2 rounded-md max-h-48 overflow-y-auto"></pre>
+        </div>
+    </div>
+
+    <script>
+        let inscriptionIds = [];
+        let selectedImages = new Set();
+
+        async function fetchInscriptions() {
+            const addresses = document.getElementById('addresses').value;
+            const fromDate = document.getElementById('from_date').value;
+            const toDate = document.getElementById('to_date').value;
+
+            const response = await fetch('/fetch_inscriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ addresses, from_date: fromDate, to_date: toDate })
+            });
+
+            const results = await response.json();
+            if (response.status !== 200) {
+                alert(results.error || 'Failed to fetch inscriptions.');
+                return;
+            }
+
+            inscriptionIds = [];
+            selectedImages.clear();
+            const imageGrid = document.getElementById('image_grid');
+            imageGrid.innerHTML = '';
+            document.getElementById('results').textContent = JSON.stringify(results, null, 2);
+
+            for (const address in results) {
+                if (!results[address].error) {
+                    results[address].forEach(id => {
+                        if (!inscriptionIds.includes(id)) {
+                            inscriptionIds.push(id);
+                            const img = document.createElement('img');
+                            img.src = `https://static.unisat.io/content/${id}`;
+                            img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                            img.onclick = () => toggleSelectImage(id, img);
+                            imageGrid.appendChild(img);
+                        }
+                    });
+                }
+            }
+        }
+
+        function toggleSelectImage(id, img) {
+            if (selectedImages.has(id)) {
+                selectedImages.delete(id);
+                img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+            } else {
+                selectedImages.add(id);
+                img.className = 'w-24 h-24 object-cover border-3 border-red-300 rounded cursor-pointer';
+            }
+        }
+
+        function deleteSelected() {
+            if (selectedImages.size === 0) {
+                alert('No images selected for deletion.');
+                return;
+            }
+            if (confirm(`Delete ${selectedImages.size} selected images?`)) {
+                inscriptionIds = inscriptionIds.filter(id => !selectedImages.has(id));
+                const imageGrid = document.getElementById('image_grid');
+                imageGrid.innerHTML = '';
+                inscriptionIds.forEach(id => {
+                    const img = document.createElement('img');
+                    img.src = `https://static.unisat.io/content/${id}`;
+                    img.className = `w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer ${selectedImages.has(id) ? 'border-3 border-red-300' : ''}`;
+                    img.onclick = () => toggleSelectImage(id, img);
+                    imageGrid.appendChild(img);
+                });
+                selectedImages.clear();
+            }
+        }
+
+        function saveInscriptions() {
+            if (inscriptionIds.length === 0) {
+                alert('No inscriptions to save.');
+                return;
+            }
+            const data = JSON.stringify({ inscriptions: inscriptionIds }, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'inscriptions.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
