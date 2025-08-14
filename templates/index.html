@@ -141,6 +141,7 @@
                 <button onclick="fetchInscriptions()">Fetch Inscriptions</button>
                 <button onclick="deleteSelected()">Delete Selected</button>
                 <button onclick="saveInscriptions()">Save Remaining</button>
+                <button onclick="goToImageLinks()">Go to Image Link</button>
             </div>
             
             <!-- Held Inscriptions Section -->
@@ -294,6 +295,17 @@
             a.download = 'inscriptions.json';
             a.click();
             URL.revokeObjectURL(url);
+        }
+        
+        function goToImageLinks() {
+            if (selectedImages.size === 0) {
+                alert('No images selected to open.');
+                return;
+            }
+            selectedImages.forEach(id => {
+                const imageUrl = `https://static.unisat.io/content/${id}`;
+                window.open(imageUrl, '_blank');
+            });
         }
     </script>
 </body>
