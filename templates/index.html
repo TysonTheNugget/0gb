@@ -31,10 +31,16 @@
             <button onclick="saveInscriptions()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Save Remaining</button>
         </div>
         
-        <!-- Image Section -->
+        <!-- Held Inscriptions Section -->
         <div class="mb-4">
-            <h2 class="text-lg font-semibold">Inscription Images (Click to Select, Delete to Remove):</h2>
-            <div id="image_grid" class="grid grid-cols-5 gap-4 mt-2 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded-md"></div>
+            <h2 class="text-lg font-semibold">Held Inscription Images (Click to Select, Delete to Remove):</h2>
+            <div id="held_image_grid" class="grid grid-cols-5 gap-4 mt-2 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded-md"></div>
+        </div>
+        
+        <!-- Transferred Inscriptions Section -->
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold">Transferred Inscription Images (Click to Select, Delete to Remove):</h2>
+            <div id="transferred_image_grid" class="grid grid-cols-5 gap-4 mt-2 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded-md"></div>
         </div>
         
         <!-- Results Section -->
@@ -43,86 +49,131 @@
             <pre id="results" class="bg-gray-50 p-2 rounded-md max-h-48 overflow-y-auto"></pre>
         </div>
     </div>
-
     <script>
-        let inscriptionIds = [];
+        let heldInscriptionIds = [];
+        let transferredInscriptionIds = [];
         let selectedImages = new Set();
-
+        
         async function fetchInscriptions() {
             const addresses = document.getElementById('addresses').value;
             const fromDate = document.getElementById('from_date').value;
             const toDate = document.getElementById('to_date').value;
-
             const response = await fetch('/fetch_inscriptions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ addresses, from_date: fromDate, to_date: toDate })
             });
-
             const results = await response.json();
             if (response.status !== 200) {
                 alert(results.error || 'Failed to fetch inscriptions.');
                 return;
             }
-
-            inscriptionIds = [];
+            heldInscriptionIds = [];
+            transferredInscriptionIds = [];
             selectedImages.clear();
-            const imageGrid = document.getElementById('image_grid');
-            imageGrid.innerHTML = '';
+            const heldImageGrid = document.getElementById('held_image_grid');
+            const transferredImageGrid = document.getElementById('transferred_image_grid');
+            heldImageGrid.innerHTML = '';
+            transferredImageGrid.innerHTML = '';
             document.getElementById('results').textContent = JSON.stringify(results, null, 2);
-
+            
             for (const address in results) {
-                if (!results[address].error) {
-                    results[address].forEach(id => {
-                        if (!inscriptionIds.includes(id)) {
-                            inscriptionIds.push(id);
-                            const img = document.createElement('img');
-                            img.src = `https://static.unisat.io/content/${id}`;
-                            img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
-                            img.onclick = () => toggleSelectImage(id, img);
-                            imageGrid.appendChild(img);
-                        }
-                    });
+                const entry = results[address];
+                if (!entry.error) {
+                    // Handle held
+                    if (Array.isArray(entry.held)) {
+                        entry.held.forEach(id => {
+                            if (!heldInscriptionIds.includes(id)) {
+                                heldInscriptionIds.push(id);
+                            }
+                        });
+                    }
+                    // Handle transferred
+                    if (Array.isArray(entry.transferred)) {
+                        entry.transferred.forEach(id => {
+                            if (!transferredInscriptionIds.includes(id)) {
+                                transferredInscriptionIds.push(id);
+                            }
+                        });
+                    }
                 }
             }
+            
+            // Render held images
+            heldInscriptionIds.forEach(id => {
+                const img = document.createElement('img');
+                img.src = `https://static.unisat.io/content/${id}`;
+                img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                img.onclick = () => toggleSelectImage(id, img);
+                heldImageGrid.appendChild(img);
+            });
+            
+            // Render transferred images
+            transferredInscriptionIds.forEach(id => {
+                const img = document.createElement('img');
+                img.src = `https://static.unisat.io/content/${id}`;
+                img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                img.onclick = () => toggleSelectImage(id, img);
+                transferredImageGrid.appendChild(img);
+            });
         }
-
+        
         function toggleSelectImage(id, img) {
             if (selectedImages.has(id)) {
                 selectedImages.delete(id);
                 img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
             } else {
                 selectedImages.add(id);
-                img.className = 'w-24 h-24 object-cover border-3 border-red-300 rounded cursor-pointer';
+                img.className = 'w-24 h-24 object-cover border-4 border-red-500 rounded cursor-pointer';
             }
         }
-
+        
         function deleteSelected() {
             if (selectedImages.size === 0) {
                 alert('No images selected for deletion.');
                 return;
             }
             if (confirm(`Delete ${selectedImages.size} selected images?`)) {
-                inscriptionIds = inscriptionIds.filter(id => !selectedImages.has(id));
-                const imageGrid = document.getElementById('image_grid');
-                imageGrid.innerHTML = '';
-                inscriptionIds.forEach(id => {
+                // Remove from held
+                heldInscriptionIds = heldInscriptionIds.filter(id => !selectedImages.has(id));
+                // Remove from transferred
+                transferredInscriptionIds = transferredInscriptionIds.filter(id => !selectedImages.has(id));
+                
+                // Re-render held grid
+                const heldImageGrid = document.getElementById('held_image_grid');
+                heldImageGrid.innerHTML = '';
+                heldInscriptionIds.forEach(id => {
                     const img = document.createElement('img');
                     img.src = `https://static.unisat.io/content/${id}`;
-                    img.className = `w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer ${selectedImages.has(id) ? 'border-3 border-red-300' : ''}`;
+                    img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
                     img.onclick = () => toggleSelectImage(id, img);
-                    imageGrid.appendChild(img);
+                    heldImageGrid.appendChild(img);
                 });
+                
+                // Re-render transferred grid
+                const transferredImageGrid = document.getElementById('transferred_image_grid');
+                transferredImageGrid.innerHTML = '';
+                transferredInscriptionIds.forEach(id => {
+                    const img = document.createElement('img');
+                    img.src = `https://static.unisat.io/content/${id}`;
+                    img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                    img.onclick = () => toggleSelectImage(id, img);
+                    transferredImageGrid.appendChild(img);
+                });
+                
                 selectedImages.clear();
             }
         }
-
+        
         function saveInscriptions() {
-            if (inscriptionIds.length === 0) {
+            if (heldInscriptionIds.length === 0 && transferredInscriptionIds.length === 0) {
                 alert('No inscriptions to save.');
                 return;
             }
-            const data = JSON.stringify({ inscriptions: inscriptionIds }, null, 2);
+            const data = JSON.stringify({ 
+                held: heldInscriptionIds, 
+                transferred: transferredInscriptionIds 
+            }, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
