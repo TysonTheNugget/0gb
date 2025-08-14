@@ -3,51 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription Fetcher</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>0GB Back End</title>
+    <link rel="stylesheet" href="https://unpkg.com/xp.css">
+    <style>
+        body {
+            background-color: #008080; /* Teal background like XP default wallpaper color */
+            font-family: Tahoma, Arial, sans-serif;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .main-window {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        .window-body {
+            padding: 10px;
+        }
+        .input-section {
+            margin-bottom: 10px;
+        }
+        .date-fields {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .date-fields > div {
+            flex: 1;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .buttons button {
+            padding: 5px 10px;
+            min-width: 120px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px inset #fff;
+        }
+        .image-item {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            border: 2px solid #c0c0c0;
+            cursor: pointer;
+        }
+        .selected {
+            border: 4px solid #ff0000;
+        }
+        .results-section pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border: 1px inset #fff;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .main-window {
+                width: 100%;
+                margin: 10px;
+            }
+            .date-fields {
+                flex-direction: column;
+            }
+            .buttons {
+                flex-direction: column;
+            }
+            .buttons button {
+                width: 100%;
+                padding: 10px;
+                font-size: 16px;
+            }
+            .image-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5px;
+            }
+            .image-item {
+                border-width: 1px;
+            }
+            textarea, input {
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 480px) {
+            .image-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-100 p-4">
-    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
-        <h1 class="text-2xl font-bold mb-4">Inscription Fetcher</h1>
-        
-        <!-- Input Section -->
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Bitcoin Addresses (one per line):</label>
-            <textarea id="addresses" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm h-24" placeholder="Enter addresses..."></textarea>
-        </div>
-        <div class="flex space-x-4 mb-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">From Date (optional):</label>
-                <input type="date" id="from_date" class="mt-1 block border-gray-300 rounded-md shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">To Date (optional):</label>
-                <input type="date" id="to_date" class="mt-1 block border-gray-300 rounded-md shadow-sm">
+<body>
+    <div class="window main-window">
+        <div class="title-bar">
+            <div class="title-bar-text">0GB Back End</div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
             </div>
         </div>
-        <div class="flex space-x-2 mb-4">
-            <button onclick="fetchInscriptions()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Fetch Inscriptions</button>
-            <button onclick="deleteSelected()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Delete Selected</button>
-            <button onclick="saveInscriptions()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Save Remaining</button>
-        </div>
-        
-        <!-- Held Inscriptions Section -->
-        <div class="mb-4">
-            <h2 class="text-lg font-semibold">Held Inscription Images (Click to Select, Delete to Remove):</h2>
-            <div id="held_image_grid" class="grid grid-cols-5 gap-4 mt-2 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded-md"></div>
-        </div>
-        
-        <!-- Transferred Inscriptions Section -->
-        <div class="mb-4">
-            <h2 class="text-lg font-semibold">Transferred Inscription Images (Click to Select, Delete to Remove):</h2>
-            <div id="transferred_image_grid" class="grid grid-cols-5 gap-4 mt-2 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded-md"></div>
-        </div>
-        
-        <!-- Results Section -->
-        <div>
-            <h2 class="text-lg font-semibold">Results (JSON):</h2>
-            <pre id="results" class="bg-gray-50 p-2 rounded-md max-h-48 overflow-y-auto"></pre>
-        </div>
+        <section class="window-body">
+            <!-- Input Section -->
+            <div class="field-row-stacked input-section">
+                <label for="addresses">Bitcoin Addresses (one per line):</label>
+                <textarea id="addresses" rows="4" placeholder="Enter addresses..."></textarea>
+            </div>
+            <div class="date-fields">
+                <div class="field-row-stacked">
+                    <label for="from_date">From Date (optional):</label>
+                    <input type="date" id="from_date">
+                </div>
+                <div class="field-row-stacked">
+                    <label for="to_date">To Date (optional):</label>
+                    <input type="date" id="to_date">
+                </div>
+            </div>
+            <div class="buttons">
+                <button onclick="fetchInscriptions()">Fetch Inscriptions</button>
+                <button onclick="deleteSelected()">Delete Selected</button>
+                <button onclick="saveInscriptions()">Save Remaining</button>
+            </div>
+            
+            <!-- Held Inscriptions Section -->
+            <div class="input-section">
+                <h2>Held Inscription Images (Click to Select, Delete to Remove):</h2>
+                <div id="held_image_grid" class="image-grid"></div>
+            </div>
+            
+            <!-- Transferred Inscriptions Section -->
+            <div class="input-section">
+                <h2>Transferred Inscription Images (Click to Select, Delete to Remove):</h2>
+                <div id="transferred_image_grid" class="image-grid"></div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="results-section">
+                <h2>Results (JSON):</h2>
+                <pre id="results"></pre>
+            </div>
+        </section>
     </div>
     <script>
         let heldInscriptionIds = [];
@@ -103,7 +216,7 @@
             heldInscriptionIds.forEach(id => {
                 const img = document.createElement('img');
                 img.src = `https://static.unisat.io/content/${id}`;
-                img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                img.className = 'image-item';
                 img.onclick = () => toggleSelectImage(id, img);
                 heldImageGrid.appendChild(img);
             });
@@ -112,7 +225,7 @@
             transferredInscriptionIds.forEach(id => {
                 const img = document.createElement('img');
                 img.src = `https://static.unisat.io/content/${id}`;
-                img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                img.className = 'image-item';
                 img.onclick = () => toggleSelectImage(id, img);
                 transferredImageGrid.appendChild(img);
             });
@@ -121,10 +234,10 @@
         function toggleSelectImage(id, img) {
             if (selectedImages.has(id)) {
                 selectedImages.delete(id);
-                img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                img.classList.remove('selected');
             } else {
                 selectedImages.add(id);
-                img.className = 'w-24 h-24 object-cover border-4 border-red-500 rounded cursor-pointer';
+                img.classList.add('selected');
             }
         }
         
@@ -145,7 +258,7 @@
                 heldInscriptionIds.forEach(id => {
                     const img = document.createElement('img');
                     img.src = `https://static.unisat.io/content/${id}`;
-                    img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                    img.className = 'image-item';
                     img.onclick = () => toggleSelectImage(id, img);
                     heldImageGrid.appendChild(img);
                 });
@@ -156,7 +269,7 @@
                 transferredInscriptionIds.forEach(id => {
                     const img = document.createElement('img');
                     img.src = `https://static.unisat.io/content/${id}`;
-                    img.className = 'w-24 h-24 object-cover border-2 border-gray-300 rounded cursor-pointer';
+                    img.className = 'image-item';
                     img.onclick = () => toggleSelectImage(id, img);
                     transferredImageGrid.appendChild(img);
                 });
