@@ -143,19 +143,21 @@
                 <button onclick="saveInscriptions()">Save Remaining</button>
                 <button onclick="goToImageLinks()">Go to Image Link</button>
             </div>
-            
+           
             <!-- Held Inscriptions Section -->
             <div class="input-section">
                 <h2>Held Inscription Images (Click to Select, Delete to Remove):</h2>
+                <button onclick="selectAll('held_image_grid')">Select All</button>
                 <div id="held_image_grid" class="image-grid"></div>
             </div>
-            
+           
             <!-- Transferred Inscriptions Section -->
             <div class="input-section">
                 <h2>Transferred Inscription Images (Click to Select, Delete to Remove):</h2>
+                <button onclick="selectAll('transferred_image_grid')">Select All</button>
                 <div id="transferred_image_grid" class="image-grid"></div>
             </div>
-            
+           
             <!-- Results Section -->
             <div class="results-section">
                 <h2>Results (JSON):</h2>
@@ -167,7 +169,7 @@
         let heldInscriptionIds = [];
         let transferredInscriptionIds = [];
         let selectedImages = new Set();
-        
+       
         async function fetchInscriptions() {
             const addresses = document.getElementById('addresses').value;
             const fromDate = document.getElementById('from_date').value;
@@ -190,7 +192,7 @@
             heldImageGrid.innerHTML = '';
             transferredImageGrid.innerHTML = '';
             document.getElementById('results').textContent = JSON.stringify(results, null, 2);
-            
+           
             for (const address in results) {
                 const entry = results[address];
                 if (!entry.error) {
@@ -212,7 +214,7 @@
                     }
                 }
             }
-            
+           
             // Render held images
             heldInscriptionIds.forEach(id => {
                 const img = document.createElement('img');
@@ -221,7 +223,7 @@
                 img.onclick = () => toggleSelectImage(id, img);
                 heldImageGrid.appendChild(img);
             });
-            
+           
             // Render transferred images
             transferredInscriptionIds.forEach(id => {
                 const img = document.createElement('img');
@@ -231,7 +233,7 @@
                 transferredImageGrid.appendChild(img);
             });
         }
-        
+       
         function toggleSelectImage(id, img) {
             if (selectedImages.has(id)) {
                 selectedImages.delete(id);
@@ -241,7 +243,20 @@
                 img.classList.add('selected');
             }
         }
-        
+
+        function selectAll(containerId) {
+            const grid = document.getElementById(containerId);
+            const images = grid.getElementsByClassName('image-item');
+            const inscriptionIds = containerId === 'held_image_grid' ? heldInscriptionIds : transferredInscriptionIds;
+            for (let i = 0; i < images.length; i++) {
+                const id = inscriptionIds[i];
+                if (!selectedImages.has(id)) {
+                    selectedImages.add(id);
+                    images[i].classList.add('selected');
+                }
+            }
+        }
+       
         function deleteSelected() {
             if (selectedImages.size === 0) {
                 alert('No images selected for deletion.');
@@ -252,7 +267,7 @@
                 heldInscriptionIds = heldInscriptionIds.filter(id => !selectedImages.has(id));
                 // Remove from transferred
                 transferredInscriptionIds = transferredInscriptionIds.filter(id => !selectedImages.has(id));
-                
+               
                 // Re-render held grid
                 const heldImageGrid = document.getElementById('held_image_grid');
                 heldImageGrid.innerHTML = '';
@@ -263,7 +278,7 @@
                     img.onclick = () => toggleSelectImage(id, img);
                     heldImageGrid.appendChild(img);
                 });
-                
+               
                 // Re-render transferred grid
                 const transferredImageGrid = document.getElementById('transferred_image_grid');
                 transferredImageGrid.innerHTML = '';
@@ -274,19 +289,19 @@
                     img.onclick = () => toggleSelectImage(id, img);
                     transferredImageGrid.appendChild(img);
                 });
-                
+               
                 selectedImages.clear();
             }
         }
-        
+       
         function saveInscriptions() {
             if (heldInscriptionIds.length === 0 && transferredInscriptionIds.length === 0) {
                 alert('No inscriptions to save.');
                 return;
             }
-            const data = JSON.stringify({ 
-                held: heldInscriptionIds, 
-                transferred: transferredInscriptionIds 
+            const data = JSON.stringify({
+                held: heldInscriptionIds,
+                transferred: transferredInscriptionIds
             }, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -296,7 +311,7 @@
             a.click();
             URL.revokeObjectURL(url);
         }
-        
+       
         function goToImageLinks() {
             if (selectedImages.size === 0) {
                 alert('No images selected to open.');
